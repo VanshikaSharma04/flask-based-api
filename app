@@ -6,9 +6,9 @@ app = Flask(__name__)
 
 DB_HOST = "localhost"
 DB_PORT = 8086
-DB_NAME = "bucket_new"
-DB_USER = "Vanshika"
-DB_PASSWORD = "Australia@123"
+DB_NAME = "bucket_name"
+DB_USER = "user_name"
+DB_PASSWORD = "password"
 
 client = InfluxDBClient(host=DB_HOST, port=DB_PORT, username=DB_USER, password=DB_PASSWORD, database=DB_NAME)
 
