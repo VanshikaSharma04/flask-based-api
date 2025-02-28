@@ -1,10 +1,6 @@
 from flask import Flask, request, jsonify
 from influxdb import InfluxDBClient
 from datetime import datetime, timedelta
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 
@@ -14,9 +10,9 @@ DB_NAME = "bucket_new"
 DB_USER = "Vanshika"
 DB_PASSWORD = "Australia@123"
 
-logging.info("Connecting to InfluxDB...")
+print("Connecting to InfluxDB...")
 client = InfluxDBClient(host=DB_HOST, port=DB_PORT, username=DB_USER, password=DB_PASSWORD, database=DB_NAME)
-logging.info("Connected to InfluxDB successfully")
+print("Connected to InfluxDB")
 
 @app.route('/data', methods=['GET'])
 def fetch_time_slots():
@@ -25,18 +21,18 @@ def fetch_time_slots():
     within a given time range.
     """
     try:
-        logging.debug("Received request to fetch time slots")
+        print("Received request to fetch time slots")
         
         # Parse query parameters
         value = request.args.get('value')
         start_time = request.args.get('startTime')  
         end_time = request.args.get('endTime')      
 
+        print(f"Received parameters - Value: {value}, Start Time: {start_time}, End Time: {end_time}")
+        
         if not value or not start_time or not end_time:
-            logging.warning("Missing required parameters: value, startTime, or endTime")
+            print("Error: Missing required parameters")
             return jsonify({"status": "error", "message": "Missing required parameters: value, startTime, or endTime"}), 400
-
-        logging.debug(f"Query parameters - value: {value}, startTime: {start_time}, endTime: {end_time}")
 
         # Query the database for the given range and value
         query = f"""
@@ -45,11 +41,11 @@ def fetch_time_slots():
         WHERE value = {value} AND time >= '{start_time}Z' AND time <= '{end_time}Z'
         ORDER BY time ASC
         """
+        print(f"Executing query: {query}")
         
-        logging.debug(f"Executing query: {query}")
         results = client.query(query)
         points = list(results.get_points())
-        logging.info(f"Query executed successfully. Retrieved {len(points)} points.")
+        print(f"Query returned {len(points)} points")
 
         # Process points to group consecutive timestamps into time slots
         time_slots = []
@@ -57,7 +53,7 @@ def fetch_time_slots():
 
         for point in points:
             timestamp = datetime.strptime(point['time'], "%Y-%m-%dT%H:%M:%S.%fZ")
-            logging.debug(f"Processing timestamp: {timestamp}")
+            print(f"Processing timestamp: {timestamp}")
 
             if current_slot is None:
                 current_slot = {"start": timestamp, "end": timestamp}
@@ -71,7 +67,7 @@ def fetch_time_slots():
                     "end": current_slot["end"].isoformat() + "Z",
                     "duration": duration
                 })
-                logging.debug(f"Added time slot: {time_slots[-1]}")
+                print(f"Added time slot: {time_slots[-1]}")
                 current_slot = {"start": timestamp, "end": timestamp}
 
         # Append the last slot if it exists
@@ -82,16 +78,16 @@ def fetch_time_slots():
                 "end": current_slot["end"].isoformat() + "Z",
                 "duration": duration
             })
-            logging.debug(f"Added final time slot: {time_slots[-1]}")
+            print(f"Added last time slot: {time_slots[-1]}")
 
         # Return the response
-        logging.info("Returning response with time slots")
+        print("Returning response")
         return jsonify(time_slots), 200
 
     except Exception as e:
-        logging.error(f"Error occurred: {str(e)}", exc_info=True)
+        print(f"Error: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == '__main__':
-    logging.info("Starting Flask application...")
+    print("Starting Flask server...")
     app.run(debug=True)
